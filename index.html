@@ -36,11 +36,11 @@
 <body>
 
     <div id="ui-layer">
-        <h1 class="text-slate-900 text-2xl font-bold tracking-tighter uppercase">Estate Master Plan v2.6</h1>
-        <p class="text-slate-600 text-sm font-medium">Internal Perimeter Tree Cover • Validated Land Use</p>
+        <h1 class="text-slate-900 text-2xl font-bold tracking-tighter uppercase">Estate Master Plan v3.0</h1>
+        <p class="text-slate-600 text-sm font-medium">Internal Perimeter Tree Cover • Waterside Poultry Integration</p>
         <div class="mt-4 flex gap-2">
             <span class="bg-green-100 text-green-700 border border-green-200 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">Internal Forestry</span>
-            <span class="bg-blue-100 text-blue-700 border border-blue-200 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">Pond Cleared</span>
+            <span class="bg-amber-100 text-amber-700 border border-amber-200 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">Pond Bank Positioned</span>
         </div>
     </div>
 
@@ -58,9 +58,8 @@
         let target = new THREE.Vector3(0, 0, 0);
         let waterMaterial;
 
-        // Pond boundaries for tree validation
-        // Pond is at (75, 60) with size (150x80)
-        // Bounds: X [75-75, 75+75] -> [0, 150], Z [60-40, 60+40] -> [20, 100]
+        // Pond boundaries: Center 75, 60 | Size 150x80
+        // X: 0 to 150 | Z: 20 to 100
         const POND_X_MIN = 0, POND_X_MAX = 150;
         const POND_Z_MIN = 20, POND_Z_MAX = 100;
 
@@ -90,11 +89,11 @@
         }
 
         function isPointInPond(x, z) {
-            return x >= POND_X_MIN && x <= POND_X_MAX && z >= POND_Z_MIN && z <= POND_Z_MAX;
+            // Buffer to prevent items being right on the edge
+            return x >= POND_X_MIN - 2 && x <= POND_X_MAX + 2 && z >= POND_Z_MIN - 2 && z <= POND_Z_MAX + 2;
         }
 
         function createTree(x, z) {
-            // Check if coordinates overlap with the water body
             if (isPointInPond(x, z)) return null;
 
             const group = new THREE.Group();
@@ -174,19 +173,16 @@
             scene.add(gate);
 
             // INTERNAL PERIMETER TREES
-            // North & South edges
             for(let i = -140; i <= 140; i += 12) {
-                addTreeSafely(i, -98); // Inside North Wall
-                addTreeSafely(i, 98);  // Inside South Wall
+                addTreeSafely(i, -98);
+                addTreeSafely(i, 98);
                 addTreeSafely(i + 6, -88); 
                 addTreeSafely(i + 6, 88);
             }
-            // East edge
             for(let j = -85; j <= 85; j += 12) {
                 addTreeSafely(138, j);
                 addTreeSafely(126, j + 6);
             }
-            // West edge
             for(let j = -100; j <= 100; j += 12) {
                 if (Math.abs(j) > 20) {
                     addTreeSafely(-138, j);
@@ -246,6 +242,23 @@
             tech.add(createLabel("SOLAR + MINING HUB", "#2563eb"));
             tech.position.set(75, 0, -60);
             scene.add(tech);
+
+            // CHICKEN SHED (Adjusted: Side of the pond, outside the water)
+            const chickenShed = new THREE.Group();
+            const shedBase = new THREE.Mesh(new THREE.BoxGeometry(20, 10, 15), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+            shedBase.position.y = 5; shedBase.castShadow = true; chickenShed.add(shedBase);
+            
+            const shedRoof = new THREE.Mesh(new THREE.BoxGeometry(22, 2, 17), new THREE.MeshStandardMaterial({ color: 0x451a03 }));
+            shedRoof.position.y = 10.5; shedRoof.rotation.z = 0.1; chickenShed.add(shedRoof);
+            
+            const fence = new THREE.Mesh(new THREE.BoxGeometry(28, 4, 22), new THREE.MeshStandardMaterial({ color: 0x92400e, wireframe: true }));
+            fence.position.y = 2; chickenShed.add(fence);
+            
+            chickenShed.add(createLabel("POULTRY SHED", "#92400e"));
+            // Pond ends at X=0 (West side). Placing it at X=-25 to be clearly "side of" the pond.
+            // Still within the southern boundary (Z < 110).
+            chickenShed.position.set(-25, 0, 60);
+            scene.add(chickenShed);
 
             // POND (South East)
             const pondGroup = new THREE.Group();
