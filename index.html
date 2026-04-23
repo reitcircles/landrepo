@@ -1,0 +1,263 @@
+!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Estate View - 22 Katha Secure Hub</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; }
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.6);
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: #fff;
+            font-size: 14px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h1 class="text-2xl font-bold">22 Katha Secure Estate</h1>
+        <p class="text-sm opacity-90">Symmetrical Technical Hub & Pond Layout</p>
+        <div class="mt-4 flex gap-2">
+            <span class="bg-blue-600 px-2 py-1 rounded text-xs">Wide Pond</span>
+            <span class="bg-emerald-600 px-2 py-1 rounded text-xs">Expanded Greenhouse</span>
+            <span class="bg-indigo-600 px-2 py-1 rounded text-xs">Optimized Solar</span>
+        </div>
+    </div>
+
+    <div class="controls-hint">
+        Drag to Rotate • Scroll to Zoom • Balanced Width View
+    </div>
+
+    <script>
+        let scene, camera, renderer;
+        let isMouseDown = false;
+        let targetRotationX = 0.5;
+        let targetRotationY = 0.5;
+
+        window.onload = function() {
+            init();
+            animate();
+        };
+
+        function createTextLabel(text, color = 'white') {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 512;
+            canvas.height = 128;
+            context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            context.roundRect(0, 0, 512, 128, 30);
+            context.fill();
+            context.font = 'bold 50px Arial';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillStyle = color;
+            context.fillText(text, 256, 64);
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            sprite.scale.set(24, 6, 1);
+            return sprite;
+        }
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a);
+            scene.fog = new THREE.Fog(0x0f172a, 50, 350);
+
+            camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            sunLight.position.set(60, 120, 40);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 2048;
+            sunLight.shadow.mapSize.height = 2048;
+            scene.add(sunLight);
+
+            // Ground
+            const ground = new THREE.Mesh(
+                new THREE.BoxGeometry(140, 2, 100), 
+                new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.8 })
+            );
+            ground.position.y = -1;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // 1. EXTENDED SQUARE POND (Width: 65)
+            const pondWidth = 65;
+            const pondDepth = 45;
+            const pond = new THREE.Mesh(
+                new THREE.PlaneGeometry(pondWidth, pondDepth),
+                new THREE.MeshStandardMaterial({ 
+                    color: 0x0369a1, transparent: true, opacity: 0.85, metalness: 0.8, roughness: 0.1
+                })
+            );
+            pond.rotation.x = -Math.PI / 2;
+            pond.position.set(32, 0.1, 22); 
+            scene.add(pond);
+
+            const pondLabel = createTextLabel("EXTENDED POND", "#38bdf8");
+            pondLabel.position.set(32, 15, 22);
+            scene.add(pondLabel);
+
+            // 2. CONCRETE ROADS
+            const roadMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.7 });
+            const entRoad = new THREE.Mesh(new THREE.PlaneGeometry(12, 50), roadMat);
+            entRoad.rotation.x = -Math.PI / 2;
+            entRoad.position.set(-55, 0.05, 20); 
+            scene.add(entRoad);
+
+            const crossRoad = new THREE.Mesh(new THREE.PlaneGeometry(100, 10), roadMat);
+            crossRoad.rotation.x = -Math.PI / 2;
+            crossRoad.position.set(-5, 0.04, -5);
+            scene.add(crossRoad);
+
+            const servRoad = new THREE.Mesh(new THREE.PlaneGeometry(8, 40), roadMat);
+            servRoad.rotation.x = -Math.PI / 2;
+            servRoad.position.set(45, 0.05, -20);
+            scene.add(servRoad);
+
+            // 3. EXPANDED TECH HUB (Matching Pond Width: 65)
+            const techHub = new THREE.Group();
+
+            // Glass Greenhouse Structure - Increased width to 65
+            const frameGeo = new THREE.BoxGeometry(65, 15, 30);
+            const glassMat = new THREE.MeshStandardMaterial({ 
+                color: 0x99f6e4, transparent: true, opacity: 0.3, metalness: 0.5, roughness: 0 
+            });
+            const greenhouse = new THREE.Mesh(frameGeo, glassMat);
+            techHub.add(greenhouse);
+
+            // Expanded Interior Greenery
+            const bushGeo = new THREE.SphereGeometry(2, 8, 8);
+            const bushMat = new THREE.MeshStandardMaterial({ color: 0x166534 });
+            for(let i=0; i<25; i++) {
+                const bush = new THREE.Mesh(bushGeo, bushMat);
+                bush.position.set(-30 + Math.random()*60, -6, -12 + Math.random()*24);
+                techHub.add(bush);
+            }
+
+            // BTC Mining Racks with Emissive Lights
+            const rackGeo = new THREE.BoxGeometry(6, 12, 6);
+            const rackMat = new THREE.MeshStandardMaterial({ color: 0x020617 });
+            const greenLight = new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x22c55e, emissiveIntensity: 2 });
+            const redLight = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 2 });
+
+            for(let i=0; i<5; i++) { // More racks in larger space
+                const rack = new THREE.Mesh(rackGeo, rackMat);
+                rack.position.set(20, -1.5, -10 + (i * 5));
+                for(let j=0; j<5; j++) {
+                    const indicator = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.1), Math.random() > 0.2 ? greenLight : redLight);
+                    indicator.position.set(-3.05, 3 - j, 0);
+                    indicator.rotation.y = Math.PI / 2;
+                    rack.add(indicator);
+                }
+                techHub.add(rack);
+            }
+
+            // TILTED SOLAR ARRAY - Expanded for width
+            const panelRows = 3;
+            const panelsPerRow = 7;
+            const panelGeo = new THREE.BoxGeometry(8, 0.2, 7);
+            const panelMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.8, roughness: 0.2 });
+            
+            for(let r=0; r<panelRows; r++) {
+                for(let p=0; p<panelsPerRow; p++) {
+                    const panel = new THREE.Mesh(panelGeo, panelMat);
+                    panel.position.set(-30 + (p * 10), 8.5, -10 + (r * 10));
+                    panel.rotation.x = -Math.PI / 6;
+                    techHub.add(panel);
+                }
+            }
+
+            // Position hub so it aligns with pond on right side
+            techHub.position.set(32, 7.5, -30);
+            scene.add(techHub);
+
+            const hubLabel = createTextLabel("WIDE GREENHOUSE & BTC HUB", "#10b981");
+            hubLabel.position.set(32, 28, -30);
+            scene.add(hubLabel);
+
+            // 4. MAIN HOUSE
+            const house = new THREE.Mesh(
+                new THREE.BoxGeometry(35, 18, 30), 
+                new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.5 })
+            );
+            house.position.set(-40, 9, -25);
+            house.castShadow = true;
+            scene.add(house);
+
+            const houseLabel = createTextLabel("MAIN RESIDENCE", "#f8fafc");
+            houseLabel.position.set(-40, 28, -25);
+            scene.add(houseLabel);
+
+            // 5. PRIVACY TREES
+            function createTree(x, z, h = 18) {
+                const group = new THREE.Group();
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 6), new THREE.MeshStandardMaterial({ color: 0x452a1e }));
+                const leaves = new THREE.Mesh(new THREE.ConeGeometry(6, h, 8), new THREE.MeshStandardMaterial({ color: 0x064e3b }));
+                leaves.position.y = h/2 + 2;
+                group.add(trunk);
+                group.add(leaves);
+                group.position.set(x, 2, z);
+                scene.add(group);
+            }
+            for(let i = -65; i <= 65; i += 12) { createTree(i, -48); createTree(i, 48); }
+            for(let i = -40; i <= 40; i += 12) { createTree(-68, i); createTree(68, i); }
+            createTree(0, -15, 22);
+
+            window.addEventListener('resize', onWindowResize, false);
+            document.addEventListener('mousedown', () => isMouseDown = true);
+            document.addEventListener('mouseup', () => isMouseDown = false);
+            document.addEventListener('mousemove', (e) => {
+                if (isMouseDown) {
+                    targetRotationY += e.movementX * 0.005;
+                    targetRotationX += e.movementY * 0.005;
+                }
+            });
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const dist = 160;
+            camera.position.x = dist * Math.sin(targetRotationY) * Math.cos(targetRotationX);
+            camera.position.z = dist * Math.cos(targetRotationY) * Math.cos(targetRotationX);
+            camera.position.y = Math.max(15, dist * Math.sin(targetRotationX) + 50);
+            camera.lookAt(0, 0, 0);
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
