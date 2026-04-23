@@ -59,7 +59,6 @@
         let waterMaterial;
 
         // Pond boundaries: Center 75, 60 | Size 150x80
-        // X: 0 to 150 | Z: 20 to 100
         const POND_X_MIN = 0, POND_X_MAX = 150;
         const POND_Z_MIN = 20, POND_Z_MAX = 100;
 
@@ -71,25 +70,25 @@
         function createLabel(text, color = '#1e293b') {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            canvas.width = 512; canvas.height = 128;
+            canvas.width = 1024; // Wider for the longer text
+            canvas.height = 128;
             ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
             ctx.beginPath();
-            ctx.roundRect(0, 0, 512, 128, 20);
+            ctx.roundRect(0, 0, 1024, 128, 20);
             ctx.fill();
-            ctx.font = 'bold 44px sans-serif';
+            ctx.font = 'bold 38px sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = color;
-            ctx.fillText(text, 256, 64);
+            ctx.fillText(text, 512, 64);
             const texture = new THREE.CanvasTexture(canvas);
             const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture }));
-            sprite.scale.set(35, 8.75, 1);
+            sprite.scale.set(70, 8.75, 1);
             sprite.position.y = 28;
             return sprite;
         }
 
         function isPointInPond(x, z) {
-            // Buffer to prevent items being right on the edge
             return x >= POND_X_MIN - 2 && x <= POND_X_MAX + 2 && z >= POND_Z_MIN - 2 && z <= POND_Z_MAX + 2;
         }
 
@@ -215,6 +214,7 @@
 
             // AGRI-TECH HUB + MINING RIGS
             const tech = new THREE.Group();
+            // Resized for 400m2 (20x20 footprint example or similar)
             const glass = new THREE.Mesh(new THREE.BoxGeometry(150, 20, 70), new THREE.MeshStandardMaterial({ color: 0xbae6fd, transparent: true, opacity: 0.4 }));
             glass.position.y = 10; tech.add(glass);
             
@@ -239,11 +239,12 @@
                 }
             }
             tech.add(rigGroup);
-            tech.add(createLabel("SOLAR + MINING HUB", "#2563eb"));
+            // UPDATED LABEL PER REQUEST
+            tech.add(createLabel("400 m² GREENHOUSE + SOLAR + MINING HUB", "#2563eb"));
             tech.position.set(75, 0, -60);
             scene.add(tech);
 
-            // CHICKEN SHED (Adjusted: Side of the pond, outside the water)
+            // CHICKEN SHED
             const chickenShed = new THREE.Group();
             const shedBase = new THREE.Mesh(new THREE.BoxGeometry(20, 10, 15), new THREE.MeshStandardMaterial({ color: 0x78350f }));
             shedBase.position.y = 5; shedBase.castShadow = true; chickenShed.add(shedBase);
@@ -255,12 +256,10 @@
             fence.position.y = 2; chickenShed.add(fence);
             
             chickenShed.add(createLabel("POULTRY SHED", "#92400e"));
-            // Pond ends at X=0 (West side). Placing it at X=-25 to be clearly "side of" the pond.
-            // Still within the southern boundary (Z < 110).
             chickenShed.position.set(-25, 0, 60);
             scene.add(chickenShed);
 
-            // POND (South East)
+            // POND
             const pondGroup = new THREE.Group();
             waterMaterial = new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.7, metalness: 0.4 });
             const water = new THREE.Mesh(new THREE.PlaneGeometry(150, 80), waterMaterial);
